@@ -20,12 +20,13 @@ export type Grid = {
     x: X[],
     y: Y[]
 }
-export type ChessPiecePosition = {
-    piece: ChessPiece,
+export type ChessPiecePosition<T> = {
+    piece: T,
     position: Position,
-    owner: SIDES
+    owner: SIDES,
+    line_of_sight: Position[]
 }
-type SIDES = "PRO" | "MASTER"
+export type SIDES = "PRO" | "MASTER"
 
 
 export enum BasicDirections {
@@ -46,31 +47,41 @@ export type CheckPayload = {
     available_moves_for_oppressed: AvailableMove[]
 }
 
-type AvailableMove = {
+export type AvailableMove = {
     piece: ChessPiece,
     position: Position
 }
 
+export type MoveMake = {
+    from: Position,
+    to: Position,
+    piece: ChessPiece,
+    owner: SIDES
+}
 
 type EventAtTurnPayload = {
-    move_made: AvailableMove,
+    move_made: MoveMake,
     whos_turto_move: SIDES
-    check: CheckPayload
+    check?: CheckPayload
+    pin?: PinPayload,
 }
 
 // A pin is valid if neither the pinningg pice or the King moves as a result the pice pinned is stripped of playable moves untill either of the conditions fails to hold 
 // we will need a place to store pins -- well see 
 type PinPayload = {
-    piece_oppressing: ChessPiece,
-    pinned: ChessPiece,
+    piece_oppressing: ChessPiecePosition<ChessPiece.Bishop | ChessPiece.Rook | ChessPiece.Queen>,
+    pinned: ChessPiecePosition<ChessPiece.Bishop | ChessPiece.Rook | ChessPiece.Queen | ChessPiece.Knight | ChessPiece.Pawn>
 }
 
 
-enum Events {
+export enum Events {
     NormalTurnSwitch,
     Check,
     Pin,
-    Block
+    Block,
+
 }
+
+
 
 
