@@ -535,17 +535,17 @@ class Chess {
 
 }
 
-const ch = new Chess()
+// const ch = new Chess()
 
-// ch.set_pieces()
-ch.drop(ChessPiece.King, "MASTER", ["A", 1])
-ch.drop(ChessPiece.Queen, "MASTER", ["A", 2])
-ch.drop(ChessPiece.Pawn, "MASTER", ["H", 1])
-ch.drop(ChessPiece.King, "PRO", ["D", 8])
-ch.drop(ChessPiece.Rook, "MASTER", ["B", 8])
-ch.drop(ChessPiece.Queen, "PRO", ["B", 1])
-console.log("Available moves for oppressed ", ch.visualize_board({ promote: { owner: "MASTER", pawn_at: ["H", 8], to: ChessPiece.Bishop }, move_made: { from: ["B", 1], owner: "PRO", piece: ChessPiece.Queen, to: ["B", 2] } }).check?.available_moves_for_oppressed)
-console.log(ch.in_both<String>(["RADA"], ["RADA"]))
+// // ch.set_pieces()
+// ch.drop(ChessPiece.King, "MASTER", ["A", 1])
+// ch.drop(ChessPiece.Queen, "MASTER", ["A", 2])
+// ch.drop(ChessPiece.Pawn, "MASTER", ["H", 1])
+// ch.drop(ChessPiece.King, "PRO", ["D", 8])
+// ch.drop(ChessPiece.Rook, "MASTER", ["B", 8])
+// ch.drop(ChessPiece.Queen, "PRO", ["B", 1])
+// console.log("Available moves for oppressed ", ch.visualize_board({ promote: { owner: "MASTER", pawn_at: ["H", 8], to: ChessPiece.Bishop }, move_made: { from: ["B", 1], owner: "PRO", piece: ChessPiece.Queen, to: ["B", 2] } }).check?.available_moves_for_oppressed)
+// console.log(ch.in_both<String>(["RADA"], ["RADA"]))
 // possibly a move can be made to escape a
 // need to define a constraint to compare radients with retrospect to points given
 
