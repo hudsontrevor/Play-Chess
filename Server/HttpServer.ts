@@ -1,5 +1,5 @@
 import { createServer, IncomingMessage, Server, ServerResponse } from "http"
-import { routes } from "./utill";
+import { routes, Values, write_cookie } from "./utill";
 import { randomUUID } from "crypto";
 import { QueryUsersTable, TableNames } from "./GameDb";
 // 
@@ -38,11 +38,15 @@ export const HttpServer: Server = createServer((request, response) => {
         response.writeHead(400)
         response.end("Url not found ")
     }
-
     if (request.url == routes.getAuth) {
         write_cookie([{
             name: "USER_ID",
-            value: auth_user()
+            value: auth_user(),
+            httpOnly: true,
+            maxAge: Values.session_max_age,
+            sameSite: "Lax",
+            secure: true
+
         }], response, 500)
         response.end(JSON.stringify({ status: "Authorized to play !" }))
         response.write(200)
@@ -51,21 +55,11 @@ export const HttpServer: Server = createServer((request, response) => {
     } else {
         if (!(request.headers.upgrade?.toLowerCase() == "websocket")) {
             response.writeHead(400)
-            // for ws dummy 
             response.end("Url requires an upgrade")
         }
+
         return
     }
-
-    response.end("Server Error ")
-    response.writeHead(500)
-
-
-
-
-
-
-
 
 })
 
@@ -79,36 +73,10 @@ export interface CookieOptions {
     maxAge?: number;
 }
 
-const write_cookie: (cookies: CookieOptions[], response: ServerResponse<IncomingMessage> & { req: IncomingMessage }, code?: number) => void = (cookies, response, code = 200) => {
-    response.appendHeader("set-cookie", cookies.flatMap((cookie) => {
-        let { name, value } = cookie;
-        let parts: string[] = [`${encodeURIComponent(name)}=${encodeURIComponent(value)}`];
-        if (cookie.httpOnly) parts.push('HttpOnly');
-        if (cookie.secure) parts.push('Secure');
-        if (cookie.sameSite) parts.push(`SameSite=${cookie.sameSite}`);
-        if (cookie.path) parts.push(`Path=${cookie.path}`);
-        if (cookie.maxAge) parts.push(`Max-Age=${cookie.maxAge}`);
-        return parts.join("; ")
-
-    }))
-    if (!response.headersSent) {
-        response.statusCode = code;
-    }
-}
-
-const getBody: (request: IncomingMessage, on_error: (error: Error) => void) => Promise<string> = (request, on_error) => new Promise<string>((resolve, reject) => {
-    let accumulatedChunks: Buffer[] = [];
-    request.on("data", (chunk) => {
-        accumulatedChunks.push(chunk);
-        if (Buffer.concat(accumulatedChunks).length > 1 * 1024 * 1024) {
-            request.destroy()
-            reject(new Error("Buffer stream too large "))
-        }
-    })
-    request.on("end", () => {
-        resolve(Buffer.concat(accumulatedChunks).toString("utf8"))
-    })
-    request.on("error", (error) => { on_error(error); reject(error) })
+HttpServer.listen(8080, () => {
+    console.log("HTTP SERVER ON ")
 })
+
+
 
 

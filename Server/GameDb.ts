@@ -1,8 +1,24 @@
 import { METHODS } from "http";
 import { Database } from "../DatabaseTS/DbSchema";
 import { Query } from "../DatabaseTS/QueryClient";
-import { Users, GameSession } from "./utill";
+import { Users, GameSession, Values } from "./utill";
 import { query } from "../DatabaseTS/DBtypes";
+import { ManageTable } from "../DatabaseTS/TableManager";
+
+
+
+//    DELETE = "DELETE",
+//     INHERIT = "INHERIT",
+//     INSERT = "INSERT",
+//     INSERT_IF_EVERY = "INSERT_IF_EVERY",
+//     INSERT_IF_SOME = "INSERT_IF_SOME",
+//     SELECT_ALL = "SELECT_ALL",
+//     SELECT_ONCE = "SELECT_ONCE",
+//     SET = "SET",
+//     UPDATE_ALL = "UPDATE_ALL",
+//     UPDATE_ONCE = "UPDATE_ONCE",
+//     WIPE = "WIPE",
+//     ABSORB = "ABSORB",
 
 const ChessDatabase: Database = new Database()
 export const TableNames = {
@@ -10,19 +26,29 @@ export const TableNames = {
     GameSessions: "GameSessions "
 } as const
 
-ChessDatabase.declare_table<Users>(TableNames.Users);
-ChessDatabase.declare_table<GameSession>(TableNames.GameSessions);
+const UsersTable = ChessDatabase.declare_table<Users>(TableNames.Users);
+const GameSessionsTable = ChessDatabase.declare_table<GameSession>(TableNames.GameSessions);
+export const UsersTableManager = new ManageTable<Users>(UsersTable, {
+    queries: [
+        { always: true, after: Values.session_age_check, query: "delete from " + TableNames.Users, details: { where: (record) => new Date().getTime() - record.logged_at.getTime() > Values.session_max_age * 1000 } }
+    ],
+    on_this_thread: false,
+})
+
+
+
+export const GameSessionsTableManager: ManageTable<GameSession> = new ManageTable<GameSession>(GameSessionsTable, { queries: [] }, UsersTableManager.get_worker())
+
 const QueryClient: Query = new Query(ChessDatabase)
-
-
 export let QueryUsersTable = (query_: string, details?: query<Users>[2]) => {
-    QueryClient.query_table<Users>(query_, details)
+    let res = QueryClient.query_table<Users>(query_, details)
+    return res
 }
 
-// QueryUsersTable("insert into Users", { record: { active: false, flagged: false, in_game_session: false, logged_at: new Date(), user_id: "reds " } })
 
 export const QueryGameSessionsTable = (query_: string, details?: query<GameSession>[2]) => {
-    QueryClient.query_table<GameSession>(query_, details)
+    let res = QueryClient.query_table<GameSession>(query_, details)
+    return res
 }
 
 
