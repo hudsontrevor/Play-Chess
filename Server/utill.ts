@@ -2,6 +2,7 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { WebSocket } from "ws"
 import { CookieOptions } from "./HttpServer";
+import { Chess } from "../ChessLogic/table";
 // will the client send teir own key 
 export interface Users {
     active: boolean
@@ -11,13 +12,22 @@ export interface Users {
     room_code?: GameSession["room_code"],
     logged_at: Date
 
-
 }
 type User_Id = string;
+
 export interface GameSession {
     players: [User_Id, User_Id]
-    game_no: number;
+    game_no: number
     room_code: string
+}
+
+export class GameRoom {
+    session: GameSession;
+    chess: Chess;
+    constructor(session: GameSession) {
+        this.session = session
+        this.chess = new Chess()
+    }
 }
 export interface PlayerSocket extends WebSocket, Users { }
 
@@ -97,6 +107,8 @@ export enum Values {
     session_max_age = 24 * 60 * 60,
     session_age_check = 1 * 60 * 600
 }
+
+
 
 
 export interface ServerResponseStructure {

@@ -1,5 +1,5 @@
-import WebSocket, { WebSocketServer } from "ws";
-import { createServer, IncomingMessage, Server } from "http"
+import { WebSocketServer } from "ws";
+import { IncomingMessage } from "http"
 import { HttpServer } from "./HttpServer";
 import { PlayerSocket, read_cookie, routes } from "./utill";
 import { QueryUsersTable, TableNames } from "./GameDb";
@@ -67,7 +67,7 @@ WsServer.on("connection", (playersocket: PlayerSocket, request: IncomingMessage)
         playersocket.close(403, "Missing cookies ")
     }
     playersocket.user_id = hold.session
-    // now we an Queue the player waiting for a game session 
+
 
 
 

@@ -28,7 +28,7 @@ import { AvailableMove, BasicDirections, CheckPayload, ChessPiece, ChessPiecePos
 //     [BasicDirections.top | BasicDirections.down, number]
 // ]
 
-class Chess {
+export class Chess {
     #Grid: Grid = { x: ["A", "B", "C", "D", "E", "F", "G", "H"] as const, y: [1, 2, 3, 4, 5, 6, 7, 8] as const }
 
     // we may intro duce a hash map for efficients position lookups but to be seen 

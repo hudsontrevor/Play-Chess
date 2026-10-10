@@ -1,7 +1,6 @@
-import { METHODS } from "http";
 import { Database } from "../DatabaseTS/DbSchema";
 import { Query } from "../DatabaseTS/QueryClient";
-import { Users, GameSession, Values } from "./utill";
+import { Users, Values, GameRoom } from "./utill";
 import { query } from "../DatabaseTS/DBtypes";
 import { ManageTable } from "../DatabaseTS/TableManager";
 
@@ -27,27 +26,27 @@ export const TableNames = {
 } as const
 
 const UsersTable = ChessDatabase.declare_table<Users>(TableNames.Users);
-const GameSessionsTable = ChessDatabase.declare_table<GameSession>(TableNames.GameSessions);
+export const GameSessionsTable = ChessDatabase.declare_table<GameRoom>(TableNames.GameSessions);
 export const UsersTableManager = new ManageTable<Users>(UsersTable, {
     queries: [
-        { always: true, after: Values.session_age_check, query: "delete from " + TableNames.Users, details: { where: (record) => new Date().getTime() - record.logged_at.getTime() > Values.session_max_age * 1000 } }
+        { always: true, after: Values.session_age_check, query: "delete from " + TableNames.Users, details: { where: (record) => new Date().getTime() - record.logged_at.getTime() >= Values.session_max_age * 1000 } }
     ],
     on_this_thread: false,
 })
 
 
 
-export const GameSessionsTableManager: ManageTable<GameSession> = new ManageTable<GameSession>(GameSessionsTable, { queries: [] }, UsersTableManager.get_worker())
+export const GameSessionsTableManager: ManageTable<GameRoom> = new ManageTable<GameRoom>(GameSessionsTable, { queries: [] });
 
 const QueryClient: Query = new Query(ChessDatabase)
 export let QueryUsersTable = (query_: string, details?: query<Users>[2]) => {
-    let res = QueryClient.query_table<Users>(query_, details)
+    let res = QueryClient.query_table<Users>(query_, details, UsersTable)
     return res
 }
 
 
-export const QueryGameSessionsTable = (query_: string, details?: query<GameSession>[2]) => {
-    let res = QueryClient.query_table<GameSession>(query_, details)
+export const QueryGameSessionsTable = (query_: string, details?: query<GameRoom>[2]) => {
+    let res = QueryClient.query_table<GameRoom>(query_, details, GameSessionsTable)
     return res
 }
 
