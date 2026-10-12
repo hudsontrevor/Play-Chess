@@ -1,9 +1,11 @@
 import { WebSocketServer } from "ws";
 import { IncomingMessage } from "http"
 import { HttpServer } from "./HttpServer";
-import { PlayerSocket, read_cookie, routes } from "./utill";
-import { QueryUsersTable, TableNames } from "./GameDb";
+import { ClientResponse, get_client_response, PlayerSocket, read_cookie, routes, server_reply } from "./utill";
+import { QueryGameSessionsTable, QueryUsersTable, TableNames } from "./GameDb";
 import { styleText } from "util";
+import { Game } from "./GameSessions";
+import { EventAtTurnPayload, SIDES } from "../ChessLogic/chessutils";
 
 // we can instatsiate an instance of our database 
 // we can have a users table and a playing session table 
@@ -67,6 +69,62 @@ WsServer.on("connection", (playersocket: PlayerSocket, request: IncomingMessage)
         playersocket.close(403, "Missing cookies ")
     }
     playersocket.user_id = hold.session
+    Game.queue_player(playersocket, (players, room, destroy_room) => {
+
+        room.chess.set_pieces()
+        const owners: Map<string, { side: SIDES, color: "WHITE" | "BLACK" }> = new Map<string, { side: SIDES, color: "WHITE" | "BLACK" }>([[players[0].user_id, { side: "MASTER", color: "WHITE" }], [players[1].user_id, { color: "BLACK", side: "PRO" }]])
+
+        let oppenent_sckt: PlayerSocket;
+        players.forEach((v, i) => {
+            oppenent_sckt = players[i == 0 ? 1 : 0]
+            v.send(server_reply({
+                message: "Oppenent found .. ",
+                game_details: {
+                    color: owners.get(v.user_id)?.color!,
+                    room_code: room.session.room_code,
+                    event_at_turn_payload: {
+                        whos_turto_move: owners.get(v.user_id)?.color!,
+                    }
+                }
+            }))
+            v.on("error", (error) => {
+                if (v.readyState != v.OPEN) {
+                    destroy_room("Opponent Disconnected ")
+                }
+            })
+            v.on("message", (data) => {
+                // if a user makes a move request and is not to play reject 
+                if (owners.get(v.user_id)?.side != room.chess.key_given_to) { return }
+                get_client_response(data.toString()).then((client_response: ClientResponse) => {
+                    let event: EventAtTurnPayload = room.chess.visualize_board({ move_made: { ...client_response.move_made, owner: owners.get(v.user_id)?.side! }, promote: client_response.promote });
+                    if (event.is_move_accepted) {
+                        oppenent_sckt.send(server_reply({
+                            message: "Opponent made a move ... ",
+                            game_details: {
+                                color: owners.get(v.user_id)?.color!,
+                                event_at_turn_payload: { ...event, whos_turto_move: owners.get(oppenent_sckt.user_id)?.color! },
+                                room_code: room.session.room_code
+                            }
+                        }))
+                    } else {
+                        v.send(server_reply({
+                            message: "Move rejected ",
+                            game_details: {
+                                color: owners.get(v.user_id)?.color!,
+                                event_at_turn_payload: { ...event, whos_turto_move: owners.get(v.user_id)?.color! },
+                                room_code: room.session.room_code
+                            }
+                        }))
+                    }
+
+                }, (reason: string) => destroy_room("Opponent misbehaved "))
+            })
+
+
+            v.on("close", (code, reason) => destroy_room("Opponent left the room "))
+        })
+
+    })
 
 
 
@@ -77,3 +135,19 @@ WsServer.on("connection", (playersocket: PlayerSocket, request: IncomingMessage)
 })
 
 
+
+// declare class Rada {
+//     on(): boolean;
+//     on(args: any): string;
+
+// }
+
+// new Rada().on()
+
+// class tum extends Rada {
+//     on(): boolean;
+//     on(args: any): string;
+//     on(args?: any): boolean | string {
+
+//     }
+// }

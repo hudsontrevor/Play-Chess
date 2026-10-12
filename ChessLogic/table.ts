@@ -1,4 +1,4 @@
-import { AvailableMove, BasicDirections, CheckPayload, ChessPiece, ChessPiecePosition, EventAtTurnPayload, EventLogger, Events, Grid, MoveMake, PinPayload, Position, PromotionDetails, SIDES, X, X_CEILLING, Y, Y_CEILLING } from "./chessutils";
+import { AvailableMove, BasicDirections, CheckPayload, ChessConsumerEvent, ChessPiece, ChessPiecePosition, EventAtTurnPayload, EventLogger, Events, Grid, MoveMake, PinPayload, Position, PromotionDetails, SIDES, X, X_CEILLING, Y, Y_CEILLING } from "./chessutils";
 
 // i am thinking of not to impliment an actual table 
 /**
@@ -36,28 +36,28 @@ export class Chess {
     // need to store prohin=bited moves 
     #prohibited: (MoveMake & { reason?: string | Events.Pin | Events.Check })[] = []
 
-    is_move_prohibited = (move: MoveMake): boolean => this.#prohibited.some((v) => JSON.stringify(v.from) == JSON.stringify(move.from) && JSON.stringify(move.to) == JSON.stringify(v.to) && v.owner == move.owner && v.piece == move.piece)
-    find_king_and_queen = (owner: SIDES): { king: Position, Queen: Position } => { return { king: this.#positions.filter((v) => v.owner == owner && v.piece == ChessPiece.King)[0].position, Queen: this.#positions.filter((v) => v.owner == owner && v.piece == ChessPiece.Queen)[0].position } }
+    private is_move_prohibited = (move: MoveMake): boolean => this.#prohibited.some((v) => JSON.stringify(v.from) == JSON.stringify(move.from) && JSON.stringify(move.to) == JSON.stringify(v.to) && v.owner == move.owner && v.piece == move.piece)
+    private find_king_and_queen = (owner: SIDES): { king: Position, Queen: Position } => { return { king: this.#positions.filter((v) => v.owner == owner && v.piece == ChessPiece.King)[0].position, Queen: this.#positions.filter((v) => v.owner == owner && v.piece == ChessPiece.Queen)[0].position } }
     drop(piece: ChessPiece, owner: SIDES, position: Position) { this.#positions.push({ owner: owner, piece: piece, position: position, line_of_sight: [] }) }
-    get_piece_at = (position: Position): ChessPiecePosition<ChessPiece> | undefined => this.#positions.filter((v) => JSON.stringify(v.position) == JSON.stringify(position)).at(0)
+    private get_piece_at = (position: Position): ChessPiecePosition<ChessPiece> | undefined => this.#positions.filter((v) => JSON.stringify(v.position) == JSON.stringify(position)).at(0)
 
-    readonly getGradient = (pi: Position, p2: Position): number => p2[1] == pi[1] ? Infinity : (pi[1] - p2[1]) / (this.#Grid.x.indexOf(pi[0]) - this.#Grid.x.indexOf(p2[0]))
-
-
-
-
-
-
-    transform_x = (position_on_x: X, direction: BasicDirections.left | BasicDirections.right): X => direction == BasicDirections.left ? this.#Grid.x[this.#Grid.x.indexOf(position_on_x) - 1 >= 0 ? this.#Grid.x.indexOf(position_on_x) - 1 : 0] : this.#Grid.x[this.#Grid.x.indexOf(position_on_x) + 1 < 8 ? this.#Grid.x.indexOf(position_on_x) + 1 : 7]
-    transform_y = (position_on_y: Y, direction: BasicDirections.top | BasicDirections.down): Y => direction == BasicDirections.down ? (position_on_y - 1 > 0 ? position_on_y - 1 as Y : 1 as Y) : (position_on_y + 1 <= 8 ? position_on_y + 1 as Y : 8 as Y)
-    diagonal_transform = (position: Position, direction: [BasicDirections.right | BasicDirections.left, BasicDirections.top | BasicDirections.down]): Position => [this.transform_x(position[0], direction[0]), this.transform_y(position[1], direction[1])]
+    private readonly getGradient = (pi: Position, p2: Position): number => p2[1] == pi[1] ? Infinity : (pi[1] - p2[1]) / (this.#Grid.x.indexOf(pi[0]) - this.#Grid.x.indexOf(p2[0]))
 
 
 
 
 
 
-    match(piece: ChessPiece, position: Position, owner: SIDES, options: { include_all_for_pawn: boolean } = { include_all_for_pawn: false }): Position[] {
+    private transform_x = (position_on_x: X, direction: BasicDirections.left | BasicDirections.right): X => direction == BasicDirections.left ? this.#Grid.x[this.#Grid.x.indexOf(position_on_x) - 1 >= 0 ? this.#Grid.x.indexOf(position_on_x) - 1 : 0] : this.#Grid.x[this.#Grid.x.indexOf(position_on_x) + 1 < 8 ? this.#Grid.x.indexOf(position_on_x) + 1 : 7]
+    private transform_y = (position_on_y: Y, direction: BasicDirections.top | BasicDirections.down): Y => direction == BasicDirections.down ? (position_on_y - 1 > 0 ? position_on_y - 1 as Y : 1 as Y) : (position_on_y + 1 <= 8 ? position_on_y + 1 as Y : 8 as Y)
+    private diagonal_transform = (position: Position, direction: [BasicDirections.right | BasicDirections.left, BasicDirections.top | BasicDirections.down]): Position => [this.transform_x(position[0], direction[0]), this.transform_y(position[1], direction[1])]
+
+
+
+
+
+
+    private match(piece: ChessPiece, position: Position, owner: SIDES, options: { include_all_for_pawn: boolean } = { include_all_for_pawn: false }): Position[] {
         switch (piece) {
             case (ChessPiece.Bishop):
                 return this.diagonal_proggression_host([...position], owner)
@@ -114,7 +114,7 @@ export class Chess {
         }
     }
 
-    grid_itterator(call_back: (p1: Position) => void = (pi) => { }): Position[] {
+    grid_itterator(call_back: (p1: Position) => void = () => undefined): Position[] {
         let collect: Position[] = []
         this.#Grid.y.forEach((v) => {
             this.#Grid.x.forEach((j) => {
@@ -133,8 +133,8 @@ export class Chess {
     // very inefficient code to refactor later 
 
     // need to impliment a function that gauges wether a point is between two point 
-    readonly point_sum = (position: Position): number => this.#Grid.x.indexOf(position[0]) + position[1] + 1
-    readonly is_between = (point_to_evaluate: Position, gauge: [Position, Position]): boolean => {
+    private readonly point_sum = (position: Position): number => this.#Grid.x.indexOf(position[0]) + position[1] + 1
+    private readonly is_between = (point_to_evaluate: Position, gauge: [Position, Position]): boolean => {
         // a point is between any two if it lies on the same line as the two 
 
 
@@ -146,7 +146,7 @@ export class Chess {
         return this.point_sum(point_to_evaluate) >= (this.point_sum(gauge[0]) > this.point_sum(gauge[1]) ? this.point_sum(gauge[1]) : this.point_sum(gauge[0])) && this.point_sum(point_to_evaluate) <= (this.point_sum(gauge[0]) > this.point_sum(gauge[1]) ? this.point_sum(gauge[0]) : this.point_sum(gauge[1]))
     }
 
-    in_both<T>(arr1: T[], arr2: T[]): T {
+    private in_both<T>(arr1: T[], arr2: T[]): T {
         // lets use a hash set 
         let hashSet = new Set<string>()
 
@@ -163,28 +163,36 @@ export class Chess {
                 return arr2[i]
             }
         }
-        console.log(hashSet)
         throw new Error("NO SIMILAR FOUND, in 'in both '  ")
 
     }
-    visualize_board = (event_: EventAtTurnPayload): EventAtTurnPayload => {
+
+
+    // indicates who should make a move next 
+    key_given_to: SIDES = "MASTER"
+    visualize_board = (event_: ChessConsumerEvent): EventAtTurnPayload => {
         // lets first go throught the board and check for checks
         // let make the move with original restrictions 
+        let blank = {
+            move_made: event_.move_made,
+            whos_turto_move: event_.move_made.owner,
+            is_move_accepted: false,
+            check: undefined,
+            check_mate: undefined,
+            pin: undefined,
+            promote: undefined,
+            taken: undefined
+        }
+        // make modifications so as the server makes all the decisions including who promotes 
+        // only move will be given 
         const make_move = this.make_move({ ...event_.move_made });
         if (!make_move.done) {
             console.log("MOVE ISUUE ")
-            // make move with original prohibited moves and if not vible return 
-            return {
-                move_made: event_.move_made,
-                whos_turto_move: event_.whos_turto_move,
-                is_move_accepted: false,
-                check: undefined,
-                check_mate: undefined,
-                pin: undefined,
-                promote: undefined,
-                taken: undefined
-            }
+            this.key_given_to = event_.move_made.owner
+
+            return blank
         }
+        this.key_given_to = event_.move_made.owner == "MASTER" ? "PRO" : "MASTER"
 
         // console.log(this.#positions)
         this.#prohibited = [];
@@ -289,7 +297,7 @@ export class Chess {
         const event_construct: EventAtTurnPayload = {
             is_move_accepted: true,
             move_made: event_.move_made,
-            whos_turto_move: event_.whos_turto_move == "MASTER" ? "PRO" : "MASTER",
+            whos_turto_move: event_.move_made.owner == "MASTER" ? "PRO" : "MASTER",
             check: undefined,
             pin: undefined,
             promote: undefined,
@@ -361,7 +369,7 @@ export class Chess {
 
 
 
-    make_move(move: MoveMake): { reason: any, done: boolean, take?: AvailableMove } {
+    private make_move(move: MoveMake): { reason: any, done: boolean, take?: AvailableMove } {
         if (this.is_move_prohibited({ ...move })) { return { done: false, reason: "MOVE PROHIBITED" } } // need to figure the output type of this message 
         if (!this.match(move.piece, move.from, move.owner)?.some((v) => JSON.stringify(v) == JSON.stringify(move.to))) { return { done: false, reason: "Invalid move " } }
         // if (!this.match(move.piece, move.from, move.owner).some((v) => JSON.stringify(v) == JSON.stringify(move.to))) { return { done: false, reason: "Invalid move " } }
@@ -386,7 +394,7 @@ export class Chess {
     }
 
 
-    prime_pieces_order = [ChessPiece.Rook, ChessPiece.Knight, ChessPiece.Bishop, ChessPiece.Queen, ChessPiece.King, ChessPiece.Bishop, ChessPiece.Knight, ChessPiece.Rook] as const
+    private prime_pieces_order = [ChessPiece.Rook, ChessPiece.Knight, ChessPiece.Bishop, ChessPiece.Queen, ChessPiece.King, ChessPiece.Bishop, ChessPiece.Knight, ChessPiece.Rook] as const
     set_pieces(): void {
         if (this.#positions.length) { return }
         this.#Grid.x.forEach((v, index) => {
@@ -438,7 +446,7 @@ export class Chess {
             this.knight_L([...position], [BasicDirections.down, BasicDirections.right]),
         ].filter((v) => v[0] != position[0] && (!this.get_piece_at(v) || this.get_piece_at(v)?.owner != owner))
     }
-    diagonal_progression(position: Position, set: [BasicDirections.right | BasicDirections.left, BasicDirections.down | BasicDirections.top], call_back: (position: Position) => { stop: boolean, pop: boolean }): Position[] {
+    private diagonal_progression(position: Position, set: [BasicDirections.right | BasicDirections.left, BasicDirections.down | BasicDirections.top], call_back: (position: Position) => { stop: boolean, pop: boolean }): Position[] {
         let i = 0;
         let coords: Position[] = [[...position]]
         while (i < 8) {
@@ -460,7 +468,7 @@ export class Chess {
         // anny point that preseerves an aspect of the original position is invalid 
         return coords
     }
-    diagonal_proggression_host(position: Position, owner: SIDES) {
+    private diagonal_proggression_host(position: Position, owner: SIDES) {
         let collection: Position[] = []
         let hold_split = {
             own: this.#positions.filter((v) => v.owner == owner).flatMap((v) => JSON.stringify(v.position)),
@@ -506,7 +514,7 @@ export class Chess {
 
         return coords
     }
-    x_y_progression_host(position: Position, owner: SIDES) {
+    private x_y_progression_host(position: Position, owner: SIDES) {
         let hold_split = {
             own: this.#positions.filter((v) => v.owner == owner).flatMap((v) => JSON.stringify(v.position)),
             against: this.#positions.filter((v) => v.owner != owner).flatMap((v) => JSON.stringify(v.position)),

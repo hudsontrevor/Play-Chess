@@ -3,6 +3,7 @@ import { IncomingMessage, ServerResponse } from "http";
 import { WebSocket } from "ws"
 import { CookieOptions } from "./HttpServer";
 import { Chess } from "../ChessLogic/table";
+import { EventAtTurnPayload, MoveMake, PromotionDetails, SIDES } from "../ChessLogic/chessutils";
 // will the client send teir own key 
 export interface Users {
     active: boolean
@@ -11,7 +12,6 @@ export interface Users {
     flagged: boolean,
     room_code?: GameSession["room_code"],
     logged_at: Date
-
 }
 type User_Id = string;
 
@@ -111,8 +111,35 @@ export enum Values {
 
 
 
-export interface ServerResponseStructure {
-
-
-
+// master translates to white 
+type GameDetails = {
+    room_code: GameSession["room_code"]
+    // color of player getting game details 
+    color: "WHITE" | "BLACK",
+    event_at_turn_payload: Omit<Partial<EventAtTurnPayload>, "whos_turto_move"> & { whos_turto_move?: "WHITE" | "BLACK" }
 }
+
+export interface ServerResponseStructure {
+    game_details?: GameDetails,
+    message: string
+}
+
+export const server_reply = (res: ServerResponseStructure): string => JSON.stringify(res)
+
+export type ClientResponse = {
+    move_made: Omit<MoveMake, "owner">,
+    promote?: PromotionDetails
+}
+export const get_client_response = (data: string): Promise<ClientResponse> => new Promise<ClientResponse>((resolve, reject) => {
+
+    const response = JSON.parse(data) as ClientResponse
+    if (!response.move_made) {
+        reject("invalid struct")
+        return
+    }
+    resolve(response)
+    return
+})
+
+
+

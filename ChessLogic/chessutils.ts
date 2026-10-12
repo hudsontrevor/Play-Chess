@@ -111,3 +111,7 @@ export class EventLogger {
 
 
 
+export type ChessConsumerEvent = {
+    move_made: MoveMake,
+    promote?: PromotionDetails
+}
