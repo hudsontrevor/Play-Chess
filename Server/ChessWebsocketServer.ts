@@ -2,7 +2,7 @@ import { WebSocketServer } from "ws";
 import { IncomingMessage } from "http"
 import { HttpServer } from "./HttpServer";
 import { ClientResponse, get_client_response, PlayerSocket, read_cookie, routes, server_reply } from "./utill";
-import { QueryGameSessionsTable, QueryUsersTable, TableNames } from "./GameDb";
+import { QueryGameSessionsTable, QueryUsersTable, TableNames, UsersTableManager } from "./GameDb";
 import { styleText } from "util";
 import { Game } from "./GameSessions";
 import { EventAtTurnPayload, SIDES } from "../ChessLogic/chessutils";
@@ -39,9 +39,11 @@ const WsServer: WebSocketServer = new WebSocketServer({
         req: IncomingMessage
     }, call_back) {
         let authcookie = read_cookie(req)
+        console.log(authcookie)
         if (!authcookie.found ||
             !QueryUsersTable("select_once from " + TableNames.Users, { where: (record) => record.user_id == authcookie.session })
         ) { call_back(false, 403, "Authentication failed "); return }
+        console.log("127.0.0.1:8080")
 
         QueryUsersTable("update_once into " + TableNames.Users, {
             call_back(record) { if (record.user_id == authcookie.session) { record.active = true; return true }; return false }
@@ -65,9 +67,15 @@ const WsServer: WebSocketServer = new WebSocketServer({
 console.log(styleText("bgGreen", "WEBSOCKET CHESS SERVER RUNNING --- "))
 WsServer.on("connection", (playersocket: PlayerSocket, request: IncomingMessage) => {
     const hold = read_cookie(request)
+    console.log(
+        "Client connected "
+    )
     if (!hold.found) {
         playersocket.close(403, "Missing cookies ")
     }
+    console.log(
+        "Client ", hold.session, "auth true "
+    )
     playersocket.user_id = hold.session
     Game.queue_player(playersocket, (players, room, destroy_room) => {
 
@@ -84,6 +92,7 @@ WsServer.on("connection", (playersocket: PlayerSocket, request: IncomingMessage)
                     room_code: room.session.room_code,
                     event_at_turn_payload: {
                         whos_turto_move: owners.get(v.user_id)?.color!,
+
                     }
                 }
             }))

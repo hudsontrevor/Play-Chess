@@ -11,7 +11,9 @@ export interface Users {
     in_game_session: boolean,
     flagged: boolean,
     room_code?: GameSession["room_code"],
-    logged_at: Date
+    logged_at: Date,
+    ip_addr: string
+
 }
 type User_Id = string;
 
@@ -69,10 +71,10 @@ export const write_cookie: (cookies: CookieOptions[], response: ServerResponse<I
 
     }))
 
-    if (!response.headersSent) {
-        response.statusCode = code;
-        response.end("Internal server error ")
-    }
+    // if (!response.headersSent) {
+    //     response.statusCode = code;
+    //     // response.end("Internal server error ")
+    // }
 }
 
 

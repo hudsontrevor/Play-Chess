@@ -2,7 +2,8 @@ import { Database } from "../DatabaseTS/DbSchema";
 import { Query } from "../DatabaseTS/QueryClient";
 import { Users, Values, GameRoom } from "./utill";
 import { query } from "../DatabaseTS/DBtypes";
-import { ManageTable } from "../DatabaseTS/TableManager";
+import { ManageTable } from "../DatabaseTS/Manage/TableManager";
+import { Queries } from "../DatabaseTS/DbQueries";
 
 
 
@@ -27,27 +28,35 @@ export const TableNames = {
 
 const UsersTable = ChessDatabase.declare_table<Users>(TableNames.Users);
 export const GameSessionsTable = ChessDatabase.declare_table<GameRoom>(TableNames.GameSessions);
+
 export const UsersTableManager = new ManageTable<Users>(UsersTable, {
     queries: [
-        { always: true, after: Values.session_age_check, query: "delete from " + TableNames.Users, details: { where: (record) => new Date().getTime() - record.logged_at.getTime() >= Values.session_max_age * 1000 } }
+        { always: true, after: Values.session_age_check, query: Queries.DELETE, details: { where: (record) => new Date().getTime() - record.logged_at.getTime() >= Values.session_max_age * 1000 } }
     ],
     on_this_thread: false,
+    use_worker_pool: {
+        recovery_options: {
+            auto_recovery: false,
+            recover_worker: new Promise((res) => { res(null) })
+        }
+    },
+
 })
 
 
 
-export const GameSessionsTableManager: ManageTable<GameRoom> = new ManageTable<GameRoom>(GameSessionsTable, { queries: [] });
+export const GameSessionsTableManager: ManageTable<GameRoom> = new ManageTable<GameRoom>(GameSessionsTable, { queries: [], on_this_thread: false, use_worker_pool: false });
 
 const QueryClient: Query = new Query(ChessDatabase)
-export let QueryUsersTable = (query_: string, details?: query<Users>[2]) => {
+export let QueryUsersTable = <cast extends any = any>(query_: string, details?: query<Users>[2]) => {
     let res = QueryClient.query_table<Users>(query_, details, UsersTable)
-    return res
+    return res as cast
 }
 
 
-export const QueryGameSessionsTable = (query_: string, details?: query<GameRoom>[2]) => {
+export const QueryGameSessionsTable = <cast extends any = any>(query_: string, details?: query<GameRoom>[2]) => {
     let res = QueryClient.query_table<GameRoom>(query_, details, GameSessionsTable)
-    return res
+    return res as cast
 }
 
 
