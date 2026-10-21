@@ -4,6 +4,8 @@ import { Users, Values, GameRoom } from "./utill";
 import { query } from "../DatabaseTS/DBtypes";
 import { ManageTable } from "../DatabaseTS/Manage/TableManager";
 import { Queries } from "../DatabaseTS/DbQueries";
+import { Observer } from "../DatabaseTS/Manage/Observer";
+// import { Observer } from "../DatabaseTS/Manage/Observer";
 
 
 
@@ -29,6 +31,12 @@ export const TableNames = {
 const UsersTable = ChessDatabase.declare_table<Users>(TableNames.Users);
 export const GameSessionsTable = ChessDatabase.declare_table<GameRoom>(TableNames.GameSessions);
 
+
+export const observer: Observer = new Observer(5);
+
+
+
+
 export const UsersTableManager = new ManageTable<Users>(UsersTable, {
     queries: [
         { always: true, after: Values.session_age_check, query: Queries.DELETE, details: { where: (record) => new Date().getTime() - record.logged_at.getTime() >= Values.session_max_age * 1000 } }
@@ -36,12 +44,19 @@ export const UsersTableManager = new ManageTable<Users>(UsersTable, {
     on_this_thread: false,
     use_worker_pool: {
         recovery_options: {
-            auto_recovery: false,
-            recover_worker: new Promise((res) => { res(null) })
+            // auto_recovery: false,
+            recover_worker: new Promise((res) => {
+                observer.on("ON_RATE", () => res(null), 50)
+            }
+            )
         }
     },
 
 })
+
+
+// can set up observer 
+
 
 
 

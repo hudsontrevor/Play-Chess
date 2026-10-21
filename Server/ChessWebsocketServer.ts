@@ -39,7 +39,7 @@ const WsServer: WebSocketServer = new WebSocketServer({
         req: IncomingMessage
     }, call_back) {
         let authcookie = read_cookie(req)
-        console.log(authcookie)
+        console.log(authcookie, "ndo hii ")
         if (!authcookie.found ||
             !QueryUsersTable("select_once from " + TableNames.Users, { where: (record) => record.user_id == authcookie.session })
         ) { call_back(false, 403, "Authentication failed "); return }
